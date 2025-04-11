@@ -5,11 +5,11 @@ from flask_marshmallow import Marshmallow
 
 app = Flask(__name__)
 
-# Usar las variables de entorno para la configuración
-user = os.getenv('DB_USER', 'root')  # Valor predeterminado 'root' si no está configurado
-password = os.getenv('DB_PASSWORD', 'root')
-direc = os.getenv('DB_HOST', 'localhost')  # Nombre del servicio en Docker Compose
-namebd = os.getenv('DB_NAME', 'tasksul')  # Nombre de la base de datos
+# Configuración con datos de PythonAnywhere
+user = os.getenv('DB_USER', 'dabisin04')
+password = os.getenv('DB_PASSWORD', 'DabisinCampo159.')
+direc = os.getenv('DB_HOST', 'dabisin04.mysql.pythonanywhere-services.com')
+namebd = os.getenv('DB_NAME', 'dabisin04$default')
 
 app.config['SQLALCHEMY_DATABASE_URI'] = f'mysql+pymysql://{user}:{password}@{direc}/{namebd}'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
