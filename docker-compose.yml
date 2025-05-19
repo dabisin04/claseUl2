@@ -1,0 +1,33 @@
+services:
+  db:
+    image: mysql:8.0
+    container_name: mysql_container_movil
+    restart: always
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: the_library 
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+
+  app:
+    build: .
+    container_name: backend_movil
+    restart: always
+    depends_on:
+      - db
+    environment:
+      DB_HOST: db
+      DB_USER: root
+      DB_PASSWORD: root
+      DB_NAME: the_library 
+      API_KEY: c3b1db537f62b81bbd8ed275dddfd41c97bfb6c4b2fc9613531c2e9b2e210bf8
+    ports:
+      - "5000:5000"
+    volumes:
+      - ./app:/app
+
+volumes:
+  mysql_data:
