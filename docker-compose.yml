@@ -12,9 +12,20 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql
 
-  app:
-    build: .
-    container_name: backend_movil
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb_container
+    restart: always
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+
+  flask_app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.flask
+    container_name: flask_backend
     restart: always
     depends_on:
       - db
@@ -25,9 +36,27 @@ services:
       DB_NAME: the_library 
       API_KEY: c3b1db537f62b81bbd8ed275dddfd41c97bfb6c4b2fc9613531c2e9b2e210bf8
     ports:
-      - "5000:5000"
+      - "5001:5001"
     volumes:
       - ./app:/app
 
+  fastapi_nosql_app:
+    build: 
+      context: .
+      dockerfile: Dockerfile.fastapi
+    container_name: fastapi_nosql_backend
+    restart: always
+    depends_on:
+      - mongodb
+    environment:
+      MONGODB_URL: mongodb://mongodb:27017
+      DATABASE_NAME: books_db_nosql
+      DEBUG: "true"
+    ports:
+      - "5002:5002"
+    volumes:
+      - ./app_fastapi:/app
+
 volumes:
   mysql_data:
+  mongodb_data:

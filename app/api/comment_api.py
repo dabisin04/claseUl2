@@ -1,4 +1,5 @@
 from flask import Blueprint, request, jsonify
+from models.user import User
 from config.db import db
 from models.comment import Comment, CommentSchema
 from sqlalchemy import text
@@ -22,6 +23,14 @@ def add_comment():
         content = data["content"]
         timestamp = data.get("timestamp", datetime.now().isoformat())
         parent_comment_id = data.get("parent_comment_id")
+
+        # 🚫 Validar que el usuario no esté restringido
+        user = User.query.get(user_id)
+        if user and user.status in ["rename_required", "suspended"]:
+            return jsonify({
+                "error": "Tu cuenta tiene restricciones y no puedes comentar por ahora.",
+                "status": user.status
+            }), 403
 
         # Determinar root_comment_id si es respuesta
         root_comment_id = None

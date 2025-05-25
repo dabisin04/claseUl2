@@ -19,7 +19,7 @@ def get_all_books():
     try:
         trashed = request.args.get("trashed", "false").lower() == "true"
         log("[GET /books] Query trashed={0}", trashed)
-        books = Book.query.filter_by(is_trashed=trashed).all()
+        books = Book.query.filter_by(is_trashed=trashed).filter(Book.status != "alert").all()
         result = books_schema.dump(books)
         log("[GET /books] Returning {0} books", len(result))
         return jsonify(result)
@@ -27,6 +27,11 @@ def get_all_books():
         log("[GET /books] Error: {0}", e)
         traceback.print_exc()
         return jsonify({"error": "Internal Server Error"}), 500
+    
+@ruta_book.route("/alertedBooks", methods=["GET"])
+def get_alerted_books():
+    books = Book.query.filter(Book.status == "alert", Book.is_trashed == False).all()
+    return jsonify(books_schema.dump(books)), 200
 
 @ruta_book.route("/book/<string:book_id>", methods=["GET"])
 def get_book_by_id(book_id):
@@ -140,7 +145,11 @@ def update_publication_date(book_id):
 def search_books():
     query = request.args.get("query", "")
     log("[GET /searchBooks] Query: {0}", query)
-    books = Book.query.filter(Book.title.ilike(f"%{query}%"), Book.is_trashed == False).all()
+    books = Book.query.filter(
+        Book.title.ilike(f"%{query}%"),
+        Book.is_trashed == False,
+        Book.status != "alert"
+    ).all()
     result = books_schema.dump(books)
     log("[GET /searchBooks] Found {0} books", len(result))
     return jsonify(result)
@@ -156,7 +165,7 @@ def get_books_by_author(author_id):
 @ruta_book.route("/topRatedBooks", methods=["GET"])
 def get_top_rated_books():
     log("[GET /topRatedBooks] Called")
-    books = Book.query.filter(Book.is_trashed == False).order_by(Book.rating.desc()).limit(10).all()
+    books = Book.query.filter(Book.is_trashed == False, Book.status != "alert").order_by(Book.rating.desc()).limit(10).all()
     result = books_schema.dump(books)
     log("[GET /topRatedBooks] Found {0} books", len(result))
     return jsonify(result)
@@ -164,7 +173,7 @@ def get_top_rated_books():
 @ruta_book.route("/mostViewedBooks", methods=["GET"])
 def get_most_viewed_books():
     log("[GET /mostViewedBooks] Called")
-    books = Book.query.filter(Book.is_trashed == False).order_by(Book.views.desc()).limit(10).all()
+    books = Book.query.filter(Book.is_trashed == False, Book.status != "alert").order_by(Book.views.desc()).limit(10).all()
     result = books_schema.dump(books)
     log("[GET /mostViewedBooks] Found {0} books", len(result))
     return jsonify(result)

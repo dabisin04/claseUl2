@@ -65,39 +65,6 @@ def update_chapter_views(chapter_id):
     db.session.commit()
     return jsonify({"message": "Vistas del capítulo actualizadas"})
 
-@ruta_chapter.route("/rateChapter", methods=["POST"])
-def rate_chapter():
-    data = request.json
-    chapter_id = data["chapter_id"]
-    user_id = data["user_id"]
-    rating = float(data["rating"])
-    rating_id = f"{user_id}-{chapter_id}"
-
-    db.session.execute(
-        "INSERT INTO chapter_ratings (id, user_id, chapter_id, rating) "
-        "VALUES (:id, :user_id, :chapter_id, :rating) "
-        "ON DUPLICATE KEY UPDATE rating = :rating",
-        {
-            "id": rating_id,
-            "user_id": user_id,
-            "chapter_id": chapter_id,
-            "rating": rating
-        }
-    )
-    db.session.commit()
-
-    result = db.session.execute(
-        "SELECT rating FROM chapter_ratings WHERE chapter_id = :chapter_id",
-        {"chapter_id": chapter_id}
-    ).fetchall()
-
-    if result:
-        avg = sum([r[0] for r in result]) / len(result)
-        db.session.query(Chapter).filter(Chapter.id == chapter_id).update({"rating": avg})
-        db.session.commit()
-
-    return jsonify({"message": "Puntuación registrada"})
-
 @ruta_chapter.route("/updateChapterContent/<string:chapter_id>", methods=["PUT"])
 def update_chapter_content(chapter_id):
     content = request.json.get("content", {})

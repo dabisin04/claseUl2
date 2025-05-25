@@ -58,17 +58,21 @@ def register_user():
         password=hashed_password,
         salt=salt,
         bio=data.get("bio"),
-        is_admin=bool(data.get("is_admin", False))
+        is_admin=bool(data.get("is_admin", False)),
+        reported_for_name=False
     )
     db.session.add(new_user)
     db.session.commit()
 
+    # Asegurarnos de que el ID se devuelva en la respuesta
     return jsonify({
-        "id": new_user.id,
+        "id": str(new_user.id),  # Convertir a string para asegurar serialización
         "username": new_user.username,
         "email": new_user.email,
         "bio": new_user.bio,
-        "is_admin": new_user.is_admin
+        "is_admin": new_user.is_admin,
+        "password": hashed_password,  # Necesario para el cliente
+        "salt": salt  # Necesario para el cliente
     }), 201
 
 @ruta_user.route("/login", methods=["POST"])
@@ -89,16 +93,33 @@ def login_user():
 @ruta_user.route("/updateUser/<string:user_id>", methods=["PUT"])
 @require_api_key()
 def update_user(user_id):
+    from models.user_strikes import UserStrike
+
     data = request.json
     user = User.query.get(user_id)
     if not user:
         return jsonify({"error": "Usuario no encontrado"}), 404
 
-    user.username = data.get("username", user.username)
+    new_username = data.get("username")
+    if new_username and new_username != user.username:
+        print(f"🟢 Nombre cambiado de {user.username} a {new_username}")
+        user.username = new_username
+        user.status = "active"
+        user.name_change_deadline = None
+
     user.email = data.get("email", user.email)
     user.bio = data.get("bio", user.bio)
     user.is_admin = data.get("is_admin", user.is_admin)
+    user.reported_for_name = data.get("reported_for_name", user.reported_for_name)  # ✅
+
     db.session.commit()
+
+    if user.status == "active" and data.get("reported_for_name"):
+        print(f"⚠️ Usuario {user_id} ha sido reportado nuevamente por nombre.")
+        strike = UserStrike(user_id=user.id, reason="Nombre inapropiado")
+        db.session.add(strike)
+        db.session.commit()
+
     return user_schema.jsonify(user)
 
 @ruta_user.route("/changePassword/<string:user_id>", methods=["PUT"])

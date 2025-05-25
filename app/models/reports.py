@@ -1,5 +1,6 @@
 from config.db import db, ma
 import uuid
+from models.user import User
 
 class Report(db.Model):
     __tablename__ = 'reports'
@@ -11,6 +12,10 @@ class Report(db.Model):
     reason = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='pending')  # 'pending', 'reviewed', 'dismissed'
     admin_id = db.Column(db.String(36), db.ForeignKey('users.id'), nullable=True)
+
+    # Relaciones
+    reporter = db.relationship('User', foreign_keys=[reporter_id], backref='reports_made')
+    admin = db.relationship('User', foreign_keys=[admin_id], backref='reports_handled')
 
     def __init__(self, reporter_id, target_id, target_type, reason, status='pending', admin_id=None, id=None):
         self.id = id or str(uuid.uuid4())

@@ -8,7 +8,7 @@ class ReportAlert(db.Model):
     book_id = db.Column(db.String(36), db.ForeignKey('books.id'), nullable=False)
     report_reason = db.Column(db.Text, nullable=False)
     status = db.Column(db.String(20), nullable=False, default='alert')  # 'alert', 'removed', 'restored'
-    created_at = db.Column(db.String, nullable=False)
+    created_at = db.Column(db.String(50), nullable=False)  # Longitud suficiente para timestamp ISO
 
     def __init__(self, book_id, report_reason, status='alert', created_at=None, id=None):
         from datetime import datetime
