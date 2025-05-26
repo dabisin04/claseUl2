@@ -9,7 +9,7 @@ def generate_salt(length: int = 16) -> str:
 def hash_password(password: str, salt: str) -> str:
     """Hashea una contraseña usando el salt proporcionado."""
     salted = password + salt
-    return hashlib.sha256(salted.encode()).hexdigest()
+    return hashlib.sha1(salted.encode()).hexdigest()
 
 def verify_password(password: str, hashed_password: str, salt: str) -> bool:
     """Verifica si una contraseña coincide con su hash."""

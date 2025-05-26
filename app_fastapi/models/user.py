@@ -1,8 +1,6 @@
 from pydantic import BaseModel, Field, EmailStr
 from typing import Optional
 from datetime import datetime
-from bson import ObjectId
-from .base import PyObjectId
 
 class UserBase(BaseModel):
     username: str
@@ -11,23 +9,29 @@ class UserBase(BaseModel):
     is_admin: bool = False
     status: str = "active"
     name_change_deadline: Optional[str] = None
-    reported_for_name: bool = False  # Campo nuevo del modelo SQL
+    reported_for_name: bool = False
 
 class UserCreate(UserBase):
+    # Este alias permite que si te llega "_id" en lugar de "id", también lo acepte
+    id: Optional[str] = Field(default=None, alias="_id")
     password: str
     salt: Optional[str] = None
+    from_flask: bool = False
+
+    model_config = {
+        "populate_by_name": True
+    }
 
 class User(UserBase):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: str = Field(..., alias="_id")
     password: str
     salt: Optional[str] = None
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
-    class Config:
-        allow_population_by_field_name = True
-        arbitrary_types_allowed = True
-        json_encoders = {
-            ObjectId: str,
+    model_config = {
+        "populate_by_name": True,
+        "json_encoders": {
             datetime: lambda dt: dt.isoformat()
         }
+    }

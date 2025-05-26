@@ -49,8 +49,8 @@ services:
     depends_on:
       - mongodb
     environment:
-      MONGODB_URL: mongodb://mongodb:27017
-      DATABASE_NAME: books_db_nosql
+      MONGO_URL: mongodb://mongodb:27017
+      MONGO_DB: books_db
       DEBUG: "true"
     ports:
       - "5002:5002"

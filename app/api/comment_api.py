@@ -2,6 +2,7 @@ from flask import Blueprint, request, jsonify
 from models.user import User
 from config.db import db
 from models.comment import Comment, CommentSchema
+from models.book import Book
 from sqlalchemy import text
 from datetime import datetime
 import uuid
@@ -24,9 +25,18 @@ def add_comment():
         timestamp = data.get("timestamp", datetime.now().isoformat())
         parent_comment_id = data.get("parent_comment_id")
 
-        # 🚫 Validar que el usuario no esté restringido
+        # Verificar que el usuario existe
         user = User.query.get(user_id)
-        if user and user.status in ["rename_required", "suspended"]:
+        if not user:
+            return jsonify({"error": "Usuario no encontrado"}), 404
+
+        # Verificar que el libro existe
+        book = Book.query.get(book_id)
+        if not book:
+            return jsonify({"error": "Libro no encontrado"}), 404
+
+        # 🚫 Validar que el usuario no esté restringido
+        if user.status in ["rename_required", "suspended"]:
             return jsonify({
                 "error": "Tu cuenta tiene restricciones y no puedes comentar por ahora.",
                 "status": user.status
@@ -80,19 +90,29 @@ def delete_comment(comment_id):
 
     db.session.delete(comment)
     db.session.commit()
-    return jsonify({"message": "Comentario eliminado"}), 200
+    return comment_schema.jsonify(comment), 200
 
 # 🔹 Comentarios de un libro
 @ruta_comment.route("/commentsByBook/<string:book_id>", methods=["GET"])
 def fetch_comments_by_book(book_id):
+    # Verificar que el libro existe
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({"error": "Libro no encontrado"}), 404
+
     comments = Comment.query.filter_by(book_id=book_id).all()
-    return jsonify(comments_schema.dump(comments)), 200
+    return comments_schema.jsonify(comments), 200
 
 # 🔹 Respuestas de un comentario
 @ruta_comment.route("/replies/<string:comment_id>", methods=["GET"])
 def fetch_replies(comment_id):
+    # Verificar que el comentario padre existe
+    parent = Comment.query.get(comment_id)
+    if not parent:
+        return jsonify({"error": "Comentario no encontrado"}), 404
+
     replies = Comment.query.filter_by(parent_comment_id=comment_id).all()
-    return jsonify(comments_schema.dump(replies)), 200
+    return comments_schema.jsonify(replies), 200
 
 # 🔹 Editar comentario (autorizado)
 @ruta_comment.route("/updateComment/<string:comment_id>", methods=["PUT"])
@@ -111,4 +131,4 @@ def update_comment(comment_id):
     new_content = request.json.get("content", "")
     comment.content = new_content
     db.session.commit()
-    return jsonify({"message": "Comentario actualizado"}), 200
+    return comment_schema.jsonify(comment), 200

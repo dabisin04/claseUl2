@@ -12,10 +12,11 @@ class ChapterBase(BaseModel):
     publication_date: Optional[datetime] = None
 
 class ChapterCreate(ChapterBase):
-    pass
+    from_flask: bool = False  # Campo para identificar si el capítulo viene de Flask
+    id: Optional[str] = None  # Campo para guardar la ID de Flask si existe
 
 class Chapter(ChapterBase):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: str = Field(alias="_id")  # UUID como string, usando alias para MongoDB
     upload_date: datetime = Field(default_factory=datetime.utcnow)
     views: int = 0
     rating: float = 0.0
@@ -26,8 +27,6 @@ class Chapter(ChapterBase):
 
     class Config:
         allow_population_by_field_name = True
-        arbitrary_types_allowed = True
         json_encoders = {
-            ObjectId: str,
             datetime: lambda dt: dt.isoformat()
         }

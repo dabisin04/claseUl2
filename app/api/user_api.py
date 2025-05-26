@@ -128,12 +128,14 @@ def change_password(user_id):
     new_password = request.json.get("new_password")
     salt = generate_salt()
     hashed = hash_password(new_password, salt)
-    db.session.query(User).filter_by(id=user_id).update({
-        "password": hashed,
-        "salt": salt
-    })
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    
+    user.password = hashed
+    user.salt = salt
     db.session.commit()
-    return jsonify({"message": "Contraseña actualizada"})
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/getUser/<string:user_id>", methods=["GET"])
 @require_api_key()
@@ -151,9 +153,13 @@ def get_all_users():
 @require_api_key()
 def update_bio(user_id):
     bio = request.json.get("bio", "")
-    db.session.query(User).filter_by(id=user_id).update({"bio": bio})
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    
+    user.bio = bio
     db.session.commit()
-    return jsonify({"message": "Biografía actualizada"})
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/deleteUser/<string:user_id>", methods=["DELETE"])
 @require_api_key()
@@ -163,13 +169,15 @@ def delete_user(user_id):
         return jsonify({"error": "No encontrado"}), 404
     db.session.delete(user)
     db.session.commit()
-    return jsonify({"message": "Usuario eliminado"})
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/isAdmin/<string:user_id>", methods=["GET"])
 @require_api_key()
 def is_admin(user_id):
     user = User.query.filter_by(id=user_id, is_admin=True).first()
-    return jsonify({"is_admin": bool(user)})
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/searchUsers", methods=["GET"])
 @require_api_key()
@@ -186,23 +194,35 @@ def follow_author():
     data = request.json
     user_id = data["user_id"]
     author_id = data["author_id"]
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+        
     db.session.execute(
         "INSERT INTO followers (user_id, author_id) VALUES (:user_id, :author_id)",
         {"user_id": user_id, "author_id": author_id}
     )
     db.session.commit()
-    return jsonify({"message": "Autor seguido"})
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/unfollowAuthor", methods=["DELETE"])
 @require_api_key()
 def unfollow_author():
     data = request.json
+    user_id = data["user_id"]
+    author_id = data["author_id"]
+    
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+        
     db.session.execute(
         "DELETE FROM followers WHERE user_id = :user_id AND author_id = :author_id",
-        {"user_id": data["user_id"], "author_id": data["author_id"]}
+        {"user_id": user_id, "author_id": author_id}
     )
     db.session.commit()
-    return jsonify({"message": "Autor dejado de seguir"})
+    return user_schema.jsonify(user)
 
 @ruta_user.route("/getFollowedAuthors/<string:user_id>", methods=["GET"])
 @require_api_key()

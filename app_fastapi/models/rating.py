@@ -1,11 +1,10 @@
 from pydantic import BaseModel, Field, validator
 from datetime import datetime
-from .base import PyObjectId
-from bson import ObjectId
+from typing import Optional, Union
 
 class RatingBase(BaseModel):
-    user_id: str
-    book_id: str
+    user_id: Union[str, None]  # Puede ser UUID (Flask) o ObjectId en string
+    book_id: Union[str, None]
     rating: float
 
     @validator('rating')
@@ -15,18 +14,17 @@ class RatingBase(BaseModel):
         return v
 
 class RatingCreate(RatingBase):
-    pass
+    from_flask: bool = False
+    id: Optional[str] = None  # Soporta ID externo desde Flask
 
 class Rating(RatingBase):
-    id: PyObjectId = Field(default_factory=PyObjectId, alias="_id")
+    id: str = Field(alias="_id")
     timestamp: datetime = Field(default_factory=datetime.utcnow)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)
 
     class Config:
         allow_population_by_field_name = True
-        arbitrary_types_allowed = True
         json_encoders = {
-            ObjectId: str,
             datetime: lambda dt: dt.isoformat()
         }

@@ -87,7 +87,7 @@ def add_report():
 
             libro = Book.query.get(data["target_id"])
             if libro:
-                libro.status = "alert"  # o libro.is_public = False
+                libro.status = "alert"
 
     # ─── STRIKES POR COMENTARIOS ───
     if data["target_type"] == "comment" and data["reason"].lower() in ["ofensivo", "acoso", "lenguaje inapropiado"]:
@@ -145,6 +145,11 @@ def update_report_status(report_id):
 @require_api_key()
 def add_strike():
     data = request.json
+    # Verificar que el usuario existe
+    user = User.query.get(data["user_id"])
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
     new_strike = UserStrike(
         user_id=data["user_id"],
         reason=data["reason"]
@@ -156,6 +161,11 @@ def add_strike():
 @ruta_reportes.route("/strikesByUser/<string:user_id>", methods=["GET"])
 @require_api_key()
 def get_strikes_by_user(user_id):
+    # Verificar que el usuario existe
+    user = User.query.get(user_id)
+    if not user:
+        return jsonify({"error": "Usuario no encontrado"}), 404
+
     strikes = UserStrike.query.filter_by(user_id=user_id).all()
     return strikes_schema.jsonify(strikes)
 
@@ -165,6 +175,11 @@ def get_strikes_by_user(user_id):
 @require_api_key()
 def add_alert():
     data = request.json
+    # Verificar que el libro existe
+    book = Book.query.get(data["book_id"])
+    if not book:
+        return jsonify({"error": "Libro no encontrado"}), 404
+
     new_alert = ReportAlert(
         book_id=data["book_id"],
         report_reason=data.get("report_reason", ""),
@@ -178,6 +193,11 @@ def add_alert():
 @ruta_reportes.route("/alertsByBook/<string:book_id>", methods=["GET"])
 @require_api_key()
 def get_alerts_by_book(book_id):
+    # Verificar que el libro existe
+    book = Book.query.get(book_id)
+    if not book:
+        return jsonify({"error": "Libro no encontrado"}), 404
+
     alerts = ReportAlert.query.filter_by(book_id=book_id).all()
     return alerts_schema.jsonify(alerts)
 
